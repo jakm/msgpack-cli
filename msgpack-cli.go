@@ -98,8 +98,7 @@ func doEncDec(inFilename, outFilename string, convertFunc func(data []byte) ([]b
 
     outFile := os.Stdout
     if outFilename != "" {
-        outFile, err = os.Create(outFilename)
-        if err != nil {
+        if outFile, err = os.Create(outFilename); err != nil {
             return err
         }
         defer outFile.Close()
@@ -107,19 +106,17 @@ func doEncDec(inFilename, outFilename string, convertFunc func(data []byte) ([]b
 
     var inBuffer, outBuffer []byte
 
-    inBuffer, err = ioutil.ReadAll(inFile)
-    if err != nil {
+    if inBuffer, err = ioutil.ReadAll(inFile); err != nil {
         return fmt.Errorf("Reading error: %s", err)
     }
 
-    outBuffer, err = convertFunc(inBuffer)
-    if err != nil {
+    if outBuffer, err = convertFunc(inBuffer); err != nil {
         return err
     }
 
     var n int
-    n, err = outFile.Write(outBuffer)
-    if err != nil {
+
+    if n, err = outFile.Write(outBuffer); err != nil {
         return fmt.Errorf("Writing error: %s", err)
     }
     if n != len(outBuffer) {
@@ -141,18 +138,16 @@ func doRPC(host, port, method, params string) error {
 
     var reply interface{}
 
-    reply, err = callRPC(host, port, method, args)
-    if err != nil {
+    if reply, err = callRPC(host, port, method, args); err != nil {
         return err
     }
 
-    var s_reply string
-    s_reply, err = encodeJSON(reply)
-    if err != nil {
+    var jsonData string
+    if jsonData, err = encodeJSON(reply); err != nil {
         return err
     }
 
-    fmt.Println(s_reply)
+    fmt.Println(jsonData)
 
     return nil
 }
@@ -171,8 +166,7 @@ func callRPC(host, port, method string, args interface{}) (interface{}, error) {
     var reply interface{}
     var mArgs codec.MsgpackSpecRpcMultiArgs = args.([]interface{})
 
-    err = client.Call(method, mArgs, &reply)
-    if err != nil {
+    if err = client.Call(method, mArgs, &reply); err != nil {
         return nil, fmt.Errorf("RPC error: %s", err)
     }
 
