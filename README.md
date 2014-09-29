@@ -81,7 +81,7 @@ Encoding/decoding:
 RPC calling:
 
     $ # zero params
-    $ $ msgpack-cli rpc localhost 8000 echo
+    $ msgpack-cli rpc localhost 8000 echo
     []
     $
     $ # single param
