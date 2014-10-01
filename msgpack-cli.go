@@ -62,9 +62,7 @@ func main() {
     }
 
     switch {
-    case arguments["encode"]:
-        fallthrough
-    case arguments["decode"]:
+    case arguments["encode"], arguments["decode"]:
         inFilename := arguments["<input-file>"].(string)
         outFilename, _ := arguments["--out"].(string)
 
