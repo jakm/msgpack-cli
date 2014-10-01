@@ -26,7 +26,10 @@ import (
     "net/rpc"
     "os"
     "reflect"
+    "strconv"
     "strings"
+    "unicode"
+    "unicode/utf8"
 )
 
 const usage = `msgpack-cli
@@ -125,7 +128,12 @@ func doEncDec(inFilename, outFilename string, convertFunc func(data []byte) ([]b
 }
 
 func doRPC(host, port, method, params string) error {
-    if len(params) == 0 || params[0] != '[' {
+    if len(params) == 0 {
+        params = "[]"
+    } else if !strings.HasPrefix(params, "[") {
+        if char, _ := utf8.DecodeRuneInString(params); unicode.IsLetter(char) {
+            params = strconv.Quote(params)
+        }
         params = "[" + params + "]"
     }
 
