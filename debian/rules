@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+export DH_OPTIONS
+
+export DH_GOPKG := github.com/jakm/msgpack-cli
+
+# export DH_GOLANG_INSTALL_ALL := 1
+
+export GOPATH := $(CURDIR)/obj-$(DEB_BUILD_GNU_TYPE)
+
+override_dh_auto_build:
+	go get github.com/docopt/docopt-go
+	go get github.com/ugorji/go/codec
+
+	dh_auto_build
+
+%:
+	dh $@ --buildsystem=golang --with=golang

@@ -1,0 +1,21 @@
+Source: msgpack-cli
+Section: utils
+Priority: optional
+Maintainer: Jakub Matys <matys.jakub@gmail.com>
+Build-Depends: debhelper (>= 8.0.0),
+               dh-golang,
+               golang-pq-dev,
+               golang-go,
+               golang-godebiancontrol-dev,
+               golang-codesearch-dev
+Standards-Version: 3.9.2
+Vcs-Git: git://github.com/jakm/msgpack-cli.git
+Vcs-Browser: https://github.com/jakm/msgpack-cli
+
+Package: msgpack-cli
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Built-Using: ${misc:Built-Using}
+Description: Command line tool to work with MessagePack format.
+ msgpack-cli is command line tool that converts data from JSON to Msgpack
+ and vice versa. Also allows calling RPC methods via msgpack-rpc.
