@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+import json
+import sys
+
+try:
+    if len(sys.argv) != 3:
+        raise ValueError('Invalid number of arguments')
+
+    arg1 = sys.argv[1].strip()
+    arg2 = sys.argv[2].strip()
+
+    data1 = json.loads(arg1)
+    data2 = json.loads(arg2)
+
+    if data1 != data2:
+        raise ValueError('"{0}" != "{1}"'.format(arg1, arg2))
+
+except ValueError as e:
+    print '\033[91m' + str(e) + '\nFAILED\n\033[0m'
+    exit(1)
+
+print '\033[92mSUCCEED\n\033[0m'
