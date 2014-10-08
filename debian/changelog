@@ -1,3 +1,11 @@
+msgpack-cli (0.2) unstable; urgency=low
+
+  * Debian packaging
+  * Build script
+  * Added test scripts
+
+ -- Jakub Matys <jakub.matys@nodus.cz>  Wed, 08 Oct 2014 07:15:51 +0200
+
 msgpack-cli (0.1) unstable; urgency=low
 
   * Initial release
