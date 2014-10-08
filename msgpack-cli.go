@@ -59,7 +59,7 @@ Arguments:
     <params>            Parameters of RPC method in JSON format`
 
 func main() {
-    arguments, err := docopt.Parse(usage, nil, true, "msgpack-cli 0.2", false)
+    arguments, err := docopt.Parse(usage, nil, true, "msgpack-cli "+__VERSION__, false)
     if err != nil {
         log.Fatal(err)
     }
