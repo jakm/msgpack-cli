@@ -142,9 +142,14 @@ func doRPC(host, port, method, params string) error {
         return err
     }
 
-    var reply interface{}
+    var conn net.Conn
+    if conn, err = net.Dial("tcp", host+":"+port); err != nil {
+        return err
+    }
+    defer conn.Close()
 
-    if reply, err = callRPC(host, port, method, args); err != nil {
+    var reply interface{}
+    if reply, err = callRPC(conn, method, args); err != nil {
         return err
     }
 
@@ -158,13 +163,7 @@ func doRPC(host, port, method, params string) error {
     return nil
 }
 
-func callRPC(host, port, method string, args interface{}) (interface{}, error) {
-    conn, err := net.Dial("tcp", host+":"+port)
-    if err != nil {
-        return nil, err
-    }
-    defer conn.Close()
-
+func callRPC(conn net.Conn, method string, args interface{}) (interface{}, error) {
     handle := getHandle()
     rpcCodec := codec.MsgpackSpecRpc.ClientCodec(conn, &handle)
     client := rpc.NewClientWithCodec(rpcCodec)
@@ -172,7 +171,7 @@ func callRPC(host, port, method string, args interface{}) (interface{}, error) {
     var reply interface{}
     var mArgs codec.MsgpackSpecRpcMultiArgs = args.([]interface{})
 
-    if err = client.Call(method, mArgs, &reply); err != nil {
+    if err := client.Call(method, mArgs, &reply); err != nil {
         return nil, fmt.Errorf("RPC error: %s", err)
     }
 
