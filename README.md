@@ -16,26 +16,27 @@ Usage
     Usage:
         msgpack-cli encode <input-file> [--out=<output-file>]
         msgpack-cli decode <input-file> [--out=<output-file>]
-        msgpack-cli rpc <host> <port> <method> [<params>]
+        msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>]
         msgpack-cli -h | --help
         msgpack-cli --version
 
     Commands:
-        encode              Encode data from input file to STDOUT
-        decode              Decode data from input file to STDOUT
-        rpc                 Call RPC method and write result to STDOUT
+        encode               Encode data from input file to STDOUT
+        decode               Decode data from input file to STDOUT
+        rpc                  Call RPC method and write result to STDOUT
 
     Options:
-        -h --help           Show this help message and exit
-        --version           Show version
-        --out=<output-file> Write output data to file instead of STDOUT
+        -h --help            Show this help message and exit
+        --version            Show version
+        --out=<output-file>  Write output data to file instead of STDOUT
+        --file=<input-file>  File where parameters or RPC method are read from
 
     Arguments:
-        <input-file>        File where data are read from
-        <host>              Server hostname
-        <port>              Server port
-        <method>            Name of RPC method
-        <params>            Parameters of RPC method in JSON format
+        <input-file>         File where data are read from
+        <host>               Server hostname
+        <port>               Server port
+        <method>             Name of RPC method
+        <params>             Parameters of RPC method in JSON format
 
 Examples
 --------
