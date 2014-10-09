@@ -74,7 +74,7 @@ func main() {
             convertFunc = convertMsgpack2JSON
         }
 
-        err = doEncDec(inFilename, outFilename, convertFunc)
+        err = doConversion(inFilename, outFilename, convertFunc)
     case arguments["rpc"]:
         host := arguments["<host>"].(string)
         port := arguments["<port>"].(string)
@@ -90,7 +90,7 @@ func main() {
     }
 }
 
-func doEncDec(inFilename, outFilename string, convertFunc func(data []byte) ([]byte, error)) error {
+func doConversion(inFilename, outFilename string, convertFunc func(data []byte) ([]byte, error)) error {
     inFile, err := os.Open(inFilename)
     if err != nil {
         return err
