@@ -37,26 +37,27 @@ const usage = `msgpack-cli
 Usage:
     msgpack-cli encode <input-file> [--out=<output-file>]
     msgpack-cli decode <input-file> [--out=<output-file>]
-    msgpack-cli rpc <host> <port> <method> [<params>]
+    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>]
     msgpack-cli -h | --help
     msgpack-cli --version
 
 Commands:
-    encode              Encode data from input file to STDOUT
-    decode              Decode data from input file to STDOUT
-    rpc                 Call RPC method and write result to STDOUT
+    encode               Encode data from input file to STDOUT
+    decode               Decode data from input file to STDOUT
+    rpc                  Call RPC method and write result to STDOUT
 
 Options:
-    -h --help           Show this help message and exit
-    --version           Show version
-    --out=<output-file> Write output data to file instead of STDOUT
+    -h --help            Show this help message and exit
+    --version            Show version
+    --out=<output-file>  Write output data to file instead of STDOUT
+    --file=<input-file>  File where parameters or RPC method are read from
 
 Arguments:
-    <input-file>        File where data are read from
-    <host>              Server hostname
-    <port>              Server port
-    <method>            Name of RPC method
-    <params>            Parameters of RPC method in JSON format`
+    <input-file>         File where data are read from
+    <host>               Server hostname
+    <port>               Server port
+    <method>             Name of RPC method
+    <params>             Parameters of RPC method in JSON format`
 
 func main() {
     arguments, err := docopt.Parse(usage, nil, true, "msgpack-cli "+__VERSION__, false)
@@ -79,7 +80,10 @@ func main() {
         host := arguments["<host>"].(string)
         port := arguments["<port>"].(string)
         method := arguments["<method>"].(string)
-        params, _ := arguments["<params>"].(string)
+        params, err := getRPCParams(arguments)
+        if err != nil {
+            break
+        }
 
         err = doRPC(host, port, method, params)
     default:
@@ -248,5 +252,20 @@ func decodeMsgpack(data []byte) (object interface{}, err error) {
     if err := decoder.Decode(&object); err != nil {
         return nil, fmt.Errorf("Msgpack decoding: %s", err)
     }
+    return
+}
+
+func getRPCParams(arguments map[string]interface{}) (params string, err error) {
+    params, _ = arguments["<params>"].(string)
+    filename, _ := arguments["--file"].(string)
+
+    if filename != "" {
+        buff, err := ioutil.ReadFile(filename)
+        if err != nil {
+            return "", err
+        }
+        params = string(buff)
+    }
+
     return
 }
