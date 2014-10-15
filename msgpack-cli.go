@@ -27,6 +27,7 @@ import (
     "reflect"
     "strconv"
     "strings"
+    "time"
     "unicode"
     "unicode/utf8"
 )
@@ -36,7 +37,7 @@ const usage = `msgpack-cli
 Usage:
     msgpack-cli encode <input-file> [--out=<output-file>]
     msgpack-cli decode <input-file> [--out=<output-file>] [--pp]
-    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp]
+    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp] [--timeout=<timeout>]
     msgpack-cli -h | --help
     msgpack-cli --version
 
@@ -51,6 +52,7 @@ Options:
     --out=<output-file>  Write output data to file instead of STDOUT
     --file=<input-file>  File where parameters or RPC method are read from
     --pp                 Pretty-print - indent output JSON data
+    --timeout=<timeout>  Timeout of RPC call [default: 30]
 
 Arguments:
     <input-file>         File where data are read from
@@ -60,7 +62,13 @@ Arguments:
     <params>             Parameters of RPC method in JSON format`
 
 type Options struct {
-    indent bool
+    indent  bool
+    timeout uint32
+}
+
+type RPCResult struct {
+    reply interface{}
+    err   error
 }
 
 func main() {
@@ -86,12 +94,21 @@ func main() {
         host := arguments["<host>"].(string)
         port := arguments["<port>"].(string)
         method := arguments["<method>"].(string)
-        params, err := getRPCParams(arguments)
+        var params string
+        params, err = getRPCParams(arguments)
+        if err != nil {
+            break
+        }
+        var timeout uint32
+        timeout, err = getTimeout(arguments)
         if err != nil {
             break
         }
 
-        options := Options{indent: arguments["--pp"].(bool)}
+        options := Options{
+            indent:  arguments["--pp"].(bool),
+            timeout: timeout,
+        }
 
         err = doRPC(host, port, method, params, options)
     default:
@@ -160,22 +177,31 @@ func doRPC(host, port, method, params string, options Options) error {
     }
     defer conn.Close()
 
-    var reply interface{}
-    if reply, err = callRPC(conn, method, args); err != nil {
-        return err
-    }
+    result := make(chan RPCResult)
+    defer close(result)
 
-    var jsonData string
-    if jsonData, err = encodeJSON(reply, options.indent); err != nil {
-        return err
-    }
+    go callRPC(result, conn, method, args)
 
-    fmt.Println(jsonData)
+    select {
+    case res := <-result:
+        if res.err != nil {
+            return res.err
+        }
+
+        var jsonData string
+        if jsonData, err = encodeJSON(res.reply, options.indent); err != nil {
+            return err
+        }
+
+        fmt.Println(jsonData)
+    case <-time.After(time.Duration(options.timeout) * time.Second):
+        return fmt.Errorf("RPC call timed out")
+    }
 
     return nil
 }
 
-func callRPC(conn net.Conn, method string, args interface{}) (interface{}, error) {
+func callRPC(result chan<- RPCResult, conn net.Conn, method string, args interface{}) {
     handle := getHandle()
     rpcCodec := codec.MsgpackSpecRpc.ClientCodec(conn, &handle)
     client := rpc.NewClientWithCodec(rpcCodec)
@@ -184,10 +210,10 @@ func callRPC(conn net.Conn, method string, args interface{}) (interface{}, error
     var mArgs codec.MsgpackSpecRpcMultiArgs = args.([]interface{})
 
     if err := client.Call(method, mArgs, &reply); err != nil {
-        return nil, fmt.Errorf("RPC error: %s", err)
+        result <- RPCResult{reply: nil, err: fmt.Errorf("RPC error: %s", err)}
     }
 
-    return reply, nil
+    result <- RPCResult{reply: reply, err: nil}
 }
 
 func convertJSON2Msgpack(data []byte, options Options) (result []byte, err error) {
@@ -278,4 +304,14 @@ func getRPCParams(arguments map[string]interface{}) (params string, err error) {
     }
 
     return params, nil
+}
+
+func getTimeout(arguments map[string]interface{}) (timeout uint32, err error) {
+    timeout = uint32(30)
+    if str := arguments["--timeout"].(string); str != "" {
+        var tmp uint64
+        tmp, err = strconv.ParseUint(str, 10, 32)
+        timeout = uint32(tmp)
+    }
+    return timeout, err
 }
