@@ -15,7 +15,6 @@
 package main
 
 import (
-    "bytes"
     "encoding/json"
     "fmt"
     "github.com/docopt/docopt-go"
@@ -36,8 +35,8 @@ const usage = `msgpack-cli
 
 Usage:
     msgpack-cli encode <input-file> [--out=<output-file>]
-    msgpack-cli decode <input-file> [--out=<output-file>]
-    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>]
+    msgpack-cli decode <input-file> [--out=<output-file>] [--pp]
+    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp]
     msgpack-cli -h | --help
     msgpack-cli --version
 
@@ -51,6 +50,7 @@ Options:
     --version            Show version
     --out=<output-file>  Write output data to file instead of STDOUT
     --file=<input-file>  File where parameters or RPC method are read from
+    --pp                 Pretty-print - indent output JSON data
 
 Arguments:
     <input-file>         File where data are read from
@@ -58,6 +58,10 @@ Arguments:
     <port>               Server port
     <method>             Name of RPC method
     <params>             Parameters of RPC method in JSON format`
+
+type Options struct {
+    indent bool
+}
 
 func main() {
     arguments, err := docopt.Parse(usage, nil, true, "msgpack-cli "+__VERSION__, false)
@@ -75,7 +79,9 @@ func main() {
             convertFunc = convertMsgpack2JSON
         }
 
-        err = doConversion(inFilename, outFilename, convertFunc)
+        options := Options{indent: arguments["--pp"].(bool)}
+
+        err = doConversion(inFilename, outFilename, convertFunc, options)
     case arguments["rpc"]:
         host := arguments["<host>"].(string)
         port := arguments["<port>"].(string)
@@ -85,7 +91,9 @@ func main() {
             break
         }
 
-        err = doRPC(host, port, method, params)
+        options := Options{indent: arguments["--pp"].(bool)}
+
+        err = doRPC(host, port, method, params, options)
     default:
         panic("unreachable")
     }
@@ -94,7 +102,7 @@ func main() {
     }
 }
 
-func doConversion(inFilename, outFilename string, convertFunc func(data []byte) ([]byte, error)) error {
+func doConversion(inFilename, outFilename string, convertFunc func(data []byte, options Options) ([]byte, error), options Options) error {
     inFile, err := os.Open(inFilename)
     if err != nil {
         return err
@@ -115,7 +123,7 @@ func doConversion(inFilename, outFilename string, convertFunc func(data []byte) 
         return fmt.Errorf("Reading error: %s", err)
     }
 
-    if outBuffer, err = convertFunc(inBuffer); err != nil {
+    if outBuffer, err = convertFunc(inBuffer, options); err != nil {
         return err
     }
 
@@ -131,7 +139,7 @@ func doConversion(inFilename, outFilename string, convertFunc func(data []byte) 
     return nil
 }
 
-func doRPC(host, port, method, params string) error {
+func doRPC(host, port, method, params string, options Options) error {
     if len(params) == 0 {
         params = "[]"
     } else if !strings.HasPrefix(params, "[") {
@@ -158,7 +166,7 @@ func doRPC(host, port, method, params string) error {
     }
 
     var jsonData string
-    if jsonData, err = encodeJSON(reply); err != nil {
+    if jsonData, err = encodeJSON(reply, options.indent); err != nil {
         return err
     }
 
@@ -182,7 +190,7 @@ func callRPC(conn net.Conn, method string, args interface{}) (interface{}, error
     return reply, nil
 }
 
-func convertJSON2Msgpack(data []byte) (result []byte, err error) {
+func convertJSON2Msgpack(data []byte, options Options) (result []byte, err error) {
     var object interface{}
 
     if object, err = decodeJSON(string(data)); err != nil {
@@ -193,10 +201,10 @@ func convertJSON2Msgpack(data []byte) (result []byte, err error) {
         return nil, err
     }
 
-    return
+    return result, nil
 }
 
-func convertMsgpack2JSON(data []byte) (result []byte, err error) {
+func convertMsgpack2JSON(data []byte, options Options) (result []byte, err error) {
     var object interface{}
 
     if object, err = decodeMsgpack(data); err != nil {
@@ -204,34 +212,36 @@ func convertMsgpack2JSON(data []byte) (result []byte, err error) {
     }
 
     var jsonData string
-    if jsonData, err = encodeJSON(object); err != nil {
+    if jsonData, err = encodeJSON(object, options.indent); err != nil {
         return nil, err
     }
     result = []byte(jsonData)
 
-    return
+    return result, nil
 }
 
 func getHandle() (handle codec.MsgpackHandle) {
     handle = codec.MsgpackHandle{RawToString: true}
     handle.MapType = reflect.TypeOf(map[string]interface{}(nil))
-    return
+    return handle
 }
 
-func encodeJSON(object interface{}) (string, error) {
-    var buff bytes.Buffer
-    encoder := json.NewEncoder(&buff)
-    if err := encoder.Encode(object); err != nil {
+func encodeJSON(object interface{}, indent bool) (data string, err error) {
+    var bytes []byte
+    if indent {
+        bytes, err = json.MarshalIndent(object, "", "  ")
+    } else {
+        bytes, err = json.Marshal(object)
+    }
+    if err != nil {
         return "", fmt.Errorf("JSON encoding: %s", err)
     }
-    return buff.String(), nil
+    return string(bytes), nil
 }
 
-func decodeJSON(data string) (interface{}, error) {
-    reader := strings.NewReader(data)
-    decoder := json.NewDecoder(reader)
-    var object interface{}
-    if err := decoder.Decode(&object); err != nil {
+func decodeJSON(data string) (object interface{}, err error) {
+    bytes := []byte(data)
+    if err := json.Unmarshal(bytes, &object); err != nil {
         return nil, fmt.Errorf("JSON decoding: %s", err)
     }
     return object, nil
@@ -243,7 +253,7 @@ func encodeMsgpack(object interface{}) (data []byte, err error) {
     if err := encoder.Encode(object); err != nil {
         return nil, fmt.Errorf("Msgpack encoding: %s", err)
     }
-    return
+    return data, err
 }
 
 func decodeMsgpack(data []byte) (object interface{}, err error) {
@@ -252,7 +262,7 @@ func decodeMsgpack(data []byte) (object interface{}, err error) {
     if err := decoder.Decode(&object); err != nil {
         return nil, fmt.Errorf("Msgpack decoding: %s", err)
     }
-    return
+    return object, err
 }
 
 func getRPCParams(arguments map[string]interface{}) (params string, err error) {
@@ -267,5 +277,5 @@ func getRPCParams(arguments map[string]interface{}) (params string, err error) {
         params = string(buff)
     }
 
-    return
+    return params, nil
 }
