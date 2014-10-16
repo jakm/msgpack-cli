@@ -1,3 +1,16 @@
+msgpack-cli (0.3) unstable; urgency=low
+
+  * Improved build automation
+  * The connection making moved outside callRPC
+  * Rename: doEncDec -> doConversion
+  * The rpc command can read parameters from file
+  * Readme updated
+  * Added --pp option
+  * Added --timeout option
+  * Readme updated
+
+ -- Jakub Matys <jakub.matys@nodus.cz>  Thu, 16 Oct 2014 07:40:21 +0200
+
 msgpack-cli (0.2) unstable; urgency=low
 
   * Debian packaging
