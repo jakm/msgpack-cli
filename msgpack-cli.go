@@ -15,6 +15,7 @@
 package main
 
 import (
+    "bytes"
     "encoding/json"
     "fmt"
     "github.com/docopt/docopt-go"
@@ -35,35 +36,41 @@ import (
 const usage = `msgpack-cli
 
 Usage:
-    msgpack-cli encode <input-file> [--out=<output-file>]
+    msgpack-cli encode <input-file> [--out=<output-file>] [--disable-int64-conv]
     msgpack-cli decode <input-file> [--out=<output-file>] [--pp]
-    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp] [--timeout=<timeout>]
+    msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp]
+        [--timeout=<timeout>][--disable-int64-conv]
     msgpack-cli -h | --help
     msgpack-cli --version
 
 Commands:
-    encode               Encode data from input file to STDOUT
-    decode               Decode data from input file to STDOUT
-    rpc                  Call RPC method and write result to STDOUT
+    encode                Encode data from input file to STDOUT
+    decode                Decode data from input file to STDOUT
+    rpc                   Call RPC method and write result to STDOUT
 
 Options:
-    -h --help            Show this help message and exit
-    --version            Show version
-    --out=<output-file>  Write output data to file instead of STDOUT
-    --file=<input-file>  File where parameters or RPC method are read from
-    --pp                 Pretty-print - indent output JSON data
-    --timeout=<timeout>  Timeout of RPC call [default: 30]
+    -h --help             Show this help message and exit
+    --version             Show version
+    --out=<output-file>   Write output data to file instead of STDOUT
+    --file=<input-file>   File where parameters or RPC method are read from
+    --pp                  Pretty-print - indent output JSON data
+    --timeout=<timeout>   Timeout of RPC call [default: 30]
+    --disable-int64-conv  Disable the default behaviour such that JSON numbers
+                          are converted to float64 or int64 numbers by their
+                          meaning, all result numbers will have float64 type
+
 
 Arguments:
-    <input-file>         File where data are read from
-    <host>               Server hostname
-    <port>               Server port
-    <method>             Name of RPC method
-    <params>             Parameters of RPC method in JSON format`
+    <input-file>          File where data are read from
+    <host>                Server hostname
+    <port>                Server port
+    <method>              Name of RPC method
+    <params>              Parameters of RPC method in JSON format`
 
 type Options struct {
-    indent  bool
-    timeout uint32
+    convertToInt64 bool
+    indent         bool
+    timeout        uint32
 }
 
 type RPCResult struct {
@@ -74,7 +81,7 @@ type RPCResult struct {
 func main() {
     arguments, err := docopt.Parse(usage, nil, true, "msgpack-cli "+__VERSION__, false)
     if err != nil {
-        log.Fatal(err)
+        log.Fatal(fmt.Errorf("Arguments parsing: %s", err))
     }
 
     switch {
@@ -87,7 +94,10 @@ func main() {
             convertFunc = convertMsgpack2JSON
         }
 
-        options := Options{indent: arguments["--pp"].(bool)}
+        options := Options{
+            convertToInt64: !arguments["--disable-int64-conv"].(bool),
+            indent:         arguments["--pp"].(bool),
+        }
 
         err = doConversion(inFilename, outFilename, convertFunc, options)
     case arguments["rpc"]:
@@ -106,8 +116,9 @@ func main() {
         }
 
         options := Options{
-            indent:  arguments["--pp"].(bool),
-            timeout: timeout,
+            convertToInt64: !arguments["--disable-int64-conv"].(bool),
+            indent:         arguments["--pp"].(bool),
+            timeout:        timeout,
         }
 
         err = doRPC(host, port, method, params, options)
@@ -166,7 +177,7 @@ func doRPC(host, port, method, params string, options Options) error {
         params = "[" + params + "]"
     }
 
-    args, err := decodeJSON(params)
+    args, err := decodeJSON(params, options.convertToInt64)
     if err != nil {
         return err
     }
@@ -219,7 +230,7 @@ func callRPC(result chan<- RPCResult, conn net.Conn, method string, args interfa
 func convertJSON2Msgpack(data []byte, options Options) (result []byte, err error) {
     var object interface{}
 
-    if object, err = decodeJSON(string(data)); err != nil {
+    if object, err = decodeJSON(string(data), options.convertToInt64); err != nil {
         return nil, err
     }
 
@@ -253,22 +264,39 @@ func getHandle() (handle codec.MsgpackHandle) {
 }
 
 func encodeJSON(object interface{}, indent bool) (data string, err error) {
-    var bytes []byte
-    if indent {
-        bytes, err = json.MarshalIndent(object, "", "  ")
-    } else {
-        bytes, err = json.Marshal(object)
-    }
-    if err != nil {
+    var buffer bytes.Buffer
+    encoder := json.NewEncoder(&buffer)
+    if err := encoder.Encode(object); err != nil {
         return "", fmt.Errorf("JSON encoding: %s", err)
     }
-    return string(bytes), nil
+    data = buffer.String()
+
+    if indent {
+        buffer.Truncate(0)
+        if err = json.Indent(&buffer, []byte(data), "", "  "); err != nil {
+            return "", fmt.Errorf("JSON encoding: %s", err)
+        }
+        data = buffer.String()
+    }
+
+    return data, nil
 }
 
-func decodeJSON(data string) (object interface{}, err error) {
-    bytes := []byte(data)
-    if err := json.Unmarshal(bytes, &object); err != nil {
+func decodeJSON(data string, convertToInt64 bool) (object interface{}, err error) {
+    decoder := json.NewDecoder(strings.NewReader(data))
+
+    if convertToInt64 {
+        decoder.UseNumber()
+    }
+
+    if err = decoder.Decode(&object); err != nil {
         return nil, fmt.Errorf("JSON decoding: %s", err)
+    }
+
+    if convertToInt64 {
+        if object, err = convertNumberTypes(object); err != nil {
+            return nil, fmt.Errorf("JSON decoding: %s", err)
+        }
     }
     return object, nil
 }
@@ -289,6 +317,48 @@ func decodeMsgpack(data []byte) (object interface{}, err error) {
         return nil, fmt.Errorf("Msgpack decoding: %s", err)
     }
     return object, err
+}
+
+func convertNumberTypes(inputObject interface{}) (outputObject interface{}, err error) {
+    outputObject = inputObject
+
+    switch val := inputObject.(type) {
+    case json.Number:
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
+        if strings.ContainsAny(val.String(), ".eE") {
+            outputObject, err = val.Float64()
+        } else {
+            outputObject, err = val.Int64()
+        }
+    case []interface{}:
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
+        var convertedItem interface{}
+        for idx, item := range val {
+            if convertedItem, err = convertNumberTypes(item); err != nil {
+                break
+            } else {
+                val[idx] = convertedItem
+            }
+        }
+    case map[string]interface{}:
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
+        var convertedItem interface{}
+        for key, value := range val {
+            if convertedItem, err = convertNumberTypes(value); err != nil {
+                break
+            } else {
+                val[key] = convertedItem
+            }
+        }
+    default:
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
+    }
+
+    if err != nil {
+        outputObject = nil
+    }
+
+    return outputObject, err
 }
 
 func getRPCParams(arguments map[string]interface{}) (params string, err error) {

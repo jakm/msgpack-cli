@@ -14,31 +14,36 @@ Usage
     msgpack-cli
 
     Usage:
-        msgpack-cli encode <input-file> [--out=<output-file>]
+        msgpack-cli encode <input-file> [--out=<output-file>] [--disable-int64-conv]
         msgpack-cli decode <input-file> [--out=<output-file>] [--pp]
-        msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp] [--timeout=<timeout>]
+        msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp]
+            [--timeout=<timeout>][--disable-int64-conv]
         msgpack-cli -h | --help
         msgpack-cli --version
 
     Commands:
-        encode               Encode data from input file to STDOUT
-        decode               Decode data from input file to STDOUT
-        rpc                  Call RPC method and write result to STDOUT
+        encode                Encode data from input file to STDOUT
+        decode                Decode data from input file to STDOUT
+        rpc                   Call RPC method and write result to STDOUT
 
     Options:
-        -h --help            Show this help message and exit
-        --version            Show version
-        --out=<output-file>  Write output data to file instead of STDOUT
-        --file=<input-file>  File where parameters or RPC method are read from
-        --pp                 Pretty-print - indent output JSON data
-        --timeout=<timeout>  Timeout of RPC call [default: 30]
+        -h --help             Show this help message and exit
+        --version             Show version
+        --out=<output-file>   Write output data to file instead of STDOUT
+        --file=<input-file>   File where parameters or RPC method are read from
+        --pp                  Pretty-print - indent output JSON data
+        --timeout=<timeout>   Timeout of RPC call [default: 30]
+        --disable-int64-conv  Disable the default behaviour such that JSON numbers
+                              are converted to float64 or int64 numbers by their
+                              meaning, all result numbers will have float64 type
+
 
     Arguments:
-        <input-file>         File where data are read from
-        <host>               Server hostname
-        <port>               Server port
-        <method>             Name of RPC method
-        <params>             Parameters of RPC method in JSON format
+        <input-file>          File where data are read from
+        <host>                Server hostname
+        <port>                Server port
+        <method>              Name of RPC method
+        <params>              Parameters of RPC method in JSON format
 
 Examples
 --------
