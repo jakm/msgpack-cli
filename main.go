@@ -294,7 +294,7 @@ func decodeJSON(data string, convertToInt64 bool) (object interface{}, err error
     }
 
     if convertToInt64 {
-        if object, err = convertNumberTypes(object); err != nil {
+        if err = convertNumberTypes(&object); err != nil {
             return nil, fmt.Errorf("JSON decoding: %s", err)
         }
     }
@@ -319,46 +319,40 @@ func decodeMsgpack(data []byte) (object interface{}, err error) {
     return object, err
 }
 
-func convertNumberTypes(inputObject interface{}) (outputObject interface{}, err error) {
-    outputObject = inputObject
-
-    switch val := inputObject.(type) {
+func convertNumberTypes(object *interface{}) (err error) {
+    switch value := (*object).(type) {
     case json.Number:
-        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
-        if strings.ContainsAny(val.String(), ".eE") {
-            outputObject, err = val.Float64()
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(value), value)
+        if strings.ContainsAny(value.String(), ".eE") {
+            *object, err = value.Float64()
         } else {
-            outputObject, err = val.Int64()
+            *object, err = value.Int64()
         }
     case []interface{}:
-        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
-        var convertedItem interface{}
-        for idx, item := range val {
-            if convertedItem, err = convertNumberTypes(item); err != nil {
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(value), value)
+        for idx := range value {
+            if err = convertNumberTypes(&value[idx]); err != nil {
                 break
-            } else {
-                val[idx] = convertedItem
             }
         }
     case map[string]interface{}:
-        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
-        var convertedItem interface{}
-        for key, value := range val {
-            if convertedItem, err = convertNumberTypes(value); err != nil {
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(value), value)
+        for k, v := range value {
+            if err = convertNumberTypes(&v); err != nil {
                 break
             } else {
-                val[key] = convertedItem
+                value[k] = v
             }
         }
     default:
-        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(val), val)
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(value), value)
     }
 
     if err != nil {
-        outputObject = nil
+        object = nil
     }
 
-    return outputObject, err
+    return err
 }
 
 func getRPCParams(arguments map[string]interface{}) (params string, err error) {

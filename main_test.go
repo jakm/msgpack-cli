@@ -33,38 +33,40 @@ func testConversionOfScalarValue(t *testing.T) {
     )
 
     for _, num := range []string{"0.0", ".0", "-4.", "3.14159", "-4.8e-8", "34e15"} {
-        number := json.Number(num)
+        object = json.Number(num)
 
-        object, err = convertNumberTypes(number)
+        err = convertNumberTypes(&object)
 
         if err != nil {
-            t.Errorf("Conversion of value \"%s\" failed: %s", num, err)
+            t.Fatalf("Conversion of value \"%s\" failed: %s", num, err)
         }
 
         if reflect.TypeOf(object).Kind() != reflect.Float64 {
-            t.Errorf("Value \"%s\" was was converted to "+
-                "%s type (float64 expected).", num, reflect.TypeOf(object))
+            t.Fatalf("Value \"%s\" was was converted to %s type (float64 expected).",
+                num, reflect.TypeOf(object))
         }
     }
 
     for _, num := range []string{"0", "256", "-3", "123456789", "1234567890000"} {
-        number := json.Number(num)
+        object = json.Number(num)
 
-        object, err = convertNumberTypes(number)
+        err = convertNumberTypes(&object)
 
         if err != nil {
-            t.Errorf("Conversion of value \"%s\" failed: %s", num, err)
+            t.Fatalf("Conversion of value \"%s\" failed: %s", num, err)
         }
 
         if reflect.TypeOf(object).Kind() != reflect.Int64 {
-            t.Errorf("Value \"%s\" was was converted to "+
-                "%s type (int64 expected).", num, reflect.TypeOf(object))
+            t.Fatalf("Value \"%s\" was was converted to %s type (int64 expected).",
+                num, reflect.TypeOf(object))
         }
     }
 }
 
 func testRecursiveConversionOfSlice(t *testing.T) {
-    input := []interface{}{
+    var object interface{}
+
+    object = []interface{}{
         "string",
         json.Number("1234567890000"),
         []interface{}{
@@ -76,37 +78,39 @@ func testRecursiveConversionOfSlice(t *testing.T) {
 
     checkType := func(object interface{}, expectedType reflect.Kind) {
         if reflect.TypeOf(object).Kind() != expectedType {
-            t.Errorf("Type %s of value %v doesn't match expected type %s",
+            t.Fatalf("Type %s of value %v doesn't match expected type %s",
                 reflect.TypeOf(object), object, expectedType)
         }
     }
 
-    if output, err := convertNumberTypes(input); err != nil {
-        t.Errorf("Conversion of slice %v failed: %s", input, err)
+    if err := convertNumberTypes(&object); err != nil {
+        t.Fatalf("Conversion of slice %v failed: %s", object, err)
     } else {
-        switch output := output.(type) {
+        switch object := object.(type) {
         case []interface{}:
-            checkType(output[0], reflect.String)
-            checkType(output[1], reflect.Int64)
-            checkType(output[2], reflect.Slice)
-            switch inner := output[2].(type) {
+            checkType(object[0], reflect.String)
+            checkType(object[1], reflect.Int64)
+            checkType(object[2], reflect.Slice)
+            switch inner := object[2].(type) {
             case []interface{}:
                 checkType(inner[0], reflect.Int64)
                 checkType(inner[1], reflect.Float64)
                 checkType(inner[2], reflect.String)
             default:
-                t.Errorf("Conversion function returned incorrect type %s of inner slice (expected: []interface{})",
+                t.Fatalf("Conversion function returned incorrect type %s of inner slice (expected: []interface{})",
                     reflect.TypeOf(inner))
             }
         default:
-            t.Errorf("Conversion function returned incorrect type %s (expected: []interface{})",
-                reflect.TypeOf(output))
+            t.Fatalf("Conversion function returned incorrect type %s (expected: []interface{})",
+                reflect.TypeOf(object))
         }
     }
 }
 
 func testRecursiveConversionOfMap(t *testing.T) {
-    input := map[string]interface{}{
+    var object interface{}
+
+    object = map[string]interface{}{
         "aaa": "string",
         "bbb": json.Number("1234567890000"),
         "ccc": json.Number("4."),
@@ -119,32 +123,32 @@ func testRecursiveConversionOfMap(t *testing.T) {
 
     checkType := func(object interface{}, expectedType reflect.Kind) {
         if reflect.TypeOf(object).Kind() != expectedType {
-            t.Errorf("Type %s of value %v doesn't match expected type %s",
+            t.Fatalf("Type %s of value %v doesn't match expected type %s",
                 reflect.TypeOf(object), object, expectedType)
         }
     }
 
-    if output, err := convertNumberTypes(input); err != nil {
-        t.Errorf("Conversion of map %v failed: %s", input, err)
+    if err := convertNumberTypes(&object); err != nil {
+        t.Fatalf("Conversion of map %v failed: %s", object, err)
     } else {
-        switch output := output.(type) {
+        switch object := object.(type) {
         case map[string]interface{}:
-            checkType(output["aaa"], reflect.String)
-            checkType(output["bbb"], reflect.Int64)
-            checkType(output["ccc"], reflect.Float64)
-            checkType(output["ddd"], reflect.Map)
-            switch inner := output["ddd"].(type) {
+            checkType(object["aaa"], reflect.String)
+            checkType(object["bbb"], reflect.Int64)
+            checkType(object["ccc"], reflect.Float64)
+            checkType(object["ddd"], reflect.Map)
+            switch inner := object["ddd"].(type) {
             case map[string]interface{}:
                 checkType(inner["xxx"], reflect.Int64)
                 checkType(inner["yyy"], reflect.Float64)
                 checkType(inner["zzz"], reflect.String)
             default:
-                t.Errorf("Conversion function returned incorrect type %s of inner map (expected: map[string]interface{})",
+                t.Fatalf("Conversion function returned incorrect type %s of inner map (expected: map[string]interface{})",
                     reflect.TypeOf(inner))
             }
         default:
-            t.Errorf("Conversion function returned incorrect type %s (expected: map[string]interface{})",
-                reflect.TypeOf(output))
+            t.Fatalf("Conversion function returned incorrect type %s (expected: map[string]interface{})",
+                reflect.TypeOf(object))
         }
     }
 }
