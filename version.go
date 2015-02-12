@@ -14,4 +14,4 @@
 
 package main
 
-const __VERSION__ = "0.3"
+const __VERSION__ = "0.4"
