@@ -122,8 +122,8 @@ RPC calling:
     []
     $
     $ # single param
-    $ msgpack-cli rpc localhost 8000 echo 3.159
-    [3.159]
+    $ msgpack-cli rpc localhost 8000 echo 3.14159
+    [3.14159]
     $
     $ # multiple params (as json array)
     $ msgpack-cli rpc localhost 8000 echo '["abc", "def", "ghi", {"A": 65, "B": 66, "C": 67}]'
