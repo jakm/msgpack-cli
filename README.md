@@ -6,7 +6,12 @@ msgpack-cli is command line tool that converts data from JSON to [Msgpack](http:
 Installation
 ------------
 
-    go get github.com/jakm/msgpack-cli
+```sh
+% go get github.com/jakm/msgpack-cli
+```
+
+Debian packages and Windows binaries are available on project's
+[Releases page](https://github.com/jakm/msgpack-cli/releases/latest).
 
 Usage
 -----
