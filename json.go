@@ -70,6 +70,9 @@ func NewJSONDecoder(r io.Reader, convertToInt64 bool) Decoder {
 
 func convertNumberTypes(object *interface{}) (err error) {
     switch value := (*object).(type) {
+    case *interface{}:
+        // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(value), value)
+        err = convertNumberTypes(value)
     case json.Number:
         // fmt.Printf("Type %s, value %v\n", reflect.TypeOf(value), value)
         if strings.ContainsAny(value.String(), ".eE") {
