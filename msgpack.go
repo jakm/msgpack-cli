@@ -44,7 +44,8 @@ func NewMsgpackDecoder(r io.Reader) Decoder {
 func NewMsgpackRPCClient(c net.Conn) RPCClient {
     h := getHandle()
     rpcCodec := codec.MsgpackSpecRpc.ClientCodec(c, &h)
-    return rpc.NewClientWithCodec(rpcCodec)
+    rc := rpc.NewClientWithCodec(rpcCodec)
+    return &msgpackRPCClient{rc}
 }
 
 func getHandle() codec.MsgpackHandle {

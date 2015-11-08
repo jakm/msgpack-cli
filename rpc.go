@@ -101,7 +101,7 @@ func decodeRPCParams(params string, convertToInt64 bool) (interface{}, error) {
     buffer := bytes.NewBufferString(params)
     decoder := NewJSONDecoder(buffer, convertToInt64)
     var args interface{}
-    if err := decoder.Decode(args); err == nil {
+    if err := decoder.Decode(&args); err == nil {
         return args, nil
     } else {
         return nil, err
