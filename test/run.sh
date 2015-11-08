@@ -65,30 +65,30 @@ fi
 info "Testing RPC..."
 
 echo "RPC: echo"
-assert-json-equal "$(msgpack-cli rpc localhost 8000 echo)" "[]"
+assert-json-equal "$(./bin/msgpack-cli rpc localhost 8000 echo)" "[]"
 
 echo "RPC: echo 3.14159"
-assert-json-equal "$(msgpack-cli rpc localhost 8000 echo 3.14159)" "[3.14159]"
+assert-json-equal "$(./bin/msgpack-cli rpc localhost 8000 echo 3.14159)" "[3.14159]"
 
-echo "RPC: echo test"
-assert-json-equal "$(msgpack-cli rpc localhost 8000 echo text)" '["text"]'
+echo "RPC: echo text"
+assert-json-equal "$(./bin/msgpack-cli rpc localhost 8000 echo text)" '["text"]'
 
-echo "RPC: echo \"long test\""
-assert-json-equal "$(msgpack-cli rpc localhost 8000 echo "long text")" '["long text"]'
+echo "RPC: echo \"long text\""
+assert-json-equal "$(./bin/msgpack-cli rpc localhost 8000 echo "long text")" '["long text"]'
 
 echo "RPC: echo '[\"abc\", \"def\", \"ghi\", {\"A\": 65, \"B\": 66, \"C\": 67}]'"
-assert-json-equal "$(msgpack-cli rpc localhost 8000 echo '["abc", "def", "ghi", {"A": 65, "B": 66, "C": 67}]')" '["abc","def","ghi",{"A":65,"B":66,"C":67}]'
+assert-json-equal "$(./bin/msgpack-cli rpc localhost 8000 echo '["abc", "def", "ghi", {"A": 65, "B": 66, "C": 67}]')" '["abc","def","ghi",{"A":65,"B":66,"C":67}]'
 
 # -------------------
 
 info "Testing encoding/decoding..."
 
 echo "Encode: data.json"
-msgpack-cli encode data.json --out=output.bin
+./bin/msgpack-cli encode data.json --out=output.bin
 assert-msgpack-equal output.bin data.bin
 
 echo "Decode: data.bin"
-assert-json-equal "$(msgpack-cli decode data.bin)" "$(cat data.json)"
+assert-json-equal "$(./bin/msgpack-cli decode data.bin)" "$(cat data.json)"
 
 # -------------------
 
