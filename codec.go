@@ -30,7 +30,14 @@ type Decoder interface {
 type ConversionFunc func(r io.Reader, w io.Writer, options Options) error
 
 func ConvertFormats(inFilename, outFilename string, conversionFunc ConversionFunc, options Options) error {
-    inFile, err := os.Open(inFilename)
+    var inFile *os.File
+    var err error
+
+    if inFilename == "-" {
+        inFile = os.Stdin
+    } else {
+        inFile, err = os.Open(inFilename)
+    }
     if err != nil {
         return err
     }
