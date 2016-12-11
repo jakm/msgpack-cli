@@ -1,0 +1,20 @@
+# Travis CI (http://travis-ci.org/) is a continuous integration
+# service for open source projects. This file configures it
+# to run unit tests for msgpack-cli.
+
+language: go
+
+go:
+    - 1.5
+    - 1.6
+    - 1.7
+    - tip
+
+before_install:
+    - sudo apt-get -qq update
+    - sudo apt-get install -y python python-pip
+    - sudo pip install msgpack-python==0.4.7 msgpack-rpc-python==0.3.3
+
+script:
+    - go test -v
+    - ./test/run.sh
