@@ -25,16 +25,16 @@ import (
 const usage = `msgpack-cli
 
 Usage:
-    msgpack-cli encode <input-file> [--out=<output-file>] [--disable-int64-conv]
-    msgpack-cli decode <input-file> [--out=<output-file>] [--pp]
+    msgpack-cli encode [<input-file>] [--out=<output-file>] [--disable-int64-conv]
+    msgpack-cli decode [<input-file>] [--out=<output-file>] [--pp]
     msgpack-cli rpc <host> <port> <method> [<params>|--file=<input-file>] [--pp]
         [--timeout=<timeout>][--disable-int64-conv]
     msgpack-cli -h | --help
     msgpack-cli --version
 
 Commands:
-    encode                Encode data from input file to STDOUT
-    decode                Decode data from input file to STDOUT
+    encode                Encode data from input file (default STDIN) to STDOUT
+    decode                Decode data from input file (default STDIN) to STDOUT
     rpc                   Call RPC method and write result to STDOUT
 
 Options:
@@ -70,7 +70,13 @@ func main() {
 
     switch {
     case arguments["encode"], arguments["decode"]:
-        inFilename := arguments["<input-file>"].(string)
+        var inFilename string
+        if arguments["<input-file>"] != nil {
+            inFilename = arguments["<input-file>"].(string)
+        } else {
+            inFilename = "-"
+        }
+
         outFilename, _ := arguments["--out"].(string)
 
         conversionFunc := ConvertJSON2Msgpack
