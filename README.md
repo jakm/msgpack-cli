@@ -1,6 +1,8 @@
 msgpack-cli
 ===========
 
+[![Build Status](https://travis-ci.org/jakm/msgpack-cli.svg?branch=master)](https://travis-ci.org/jakm/msgpack-cli)
+
 msgpack-cli is command line tool that converts data from JSON to [Msgpack](http://msgpack.org) and vice versa. Also allows calling RPC methods via [msgpack-rpc](https://github.com/msgpack-rpc/msgpack-rpc/blob/master/spec.md).
 
 Installation
