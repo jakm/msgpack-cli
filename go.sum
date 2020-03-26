@@ -1,0 +1,4 @@
+github.com/docopt/docopt-go v0.0.0-20141128170934-854c423c8108 h1:WJse1njqIlgvQjtOPAALBLhopGR+FKKo9OjxT7Sb6s0=
+github.com/docopt/docopt-go v0.0.0-20141128170934-854c423c8108/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
+github.com/ugorji/go v0.0.0-20151014130314-8a2a3a8c488c h1:4ZyFm+eR1HUcqyial9pxsEBi0/JvJUDrmrlexXrtUoE=
+github.com/ugorji/go v0.0.0-20151014130314-8a2a3a8c488c/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
